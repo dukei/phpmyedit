@@ -35,6 +35,11 @@
 	  original table view (Pass 1).
 */
 
+function fhtmlspecialchars($myString) {
+	// in PHP 5.4 the default encoding used by htmlspecialchars() was changed.
+	return htmlspecialchars($myString, ENT_COMPAT, 'ISO-8859-1', true);
+}
+
 class phpMyEdit_timer /* {{{ */
 {
 	var $startTime;
@@ -299,11 +304,11 @@ class phpMyEdit
 			var_dump($val);
 			$content = ob_get_contents();
 			ob_end_clean();
-			echo htmlspecialchars($content);
+			echo fhtmlspecialchars($content);
 			echo "</pre>\n";
 		} else {
-			echo 'debug_var()::<i>',htmlspecialchars($name),'</i>';
-			echo '::<b>',htmlspecialchars($val),'</b>::',"<br />\n";
+			echo 'debug_var()::<i>',fhtmlspecialchars($name),'</i>';
+			echo '::<b>',fhtmlspecialchars($val),'</b>::',"<br />\n";
 		}
 	} /* }}} */
 
@@ -370,7 +375,7 @@ class phpMyEdit
 		global $debug_query;
 		if ($debug_query || $debug) {
 			$line = intval($line);
-			echo '<h4>MySQL query at line ',$line,'</h4>',htmlspecialchars($qry),'<hr size="1" />',"\n";
+			echo '<h4>MySQL query at line ',$line,'</h4>',fhtmlspecialchars($qry),'<hr size="1" />',"\n";
 		}
 		if (isset($this->db)) {
 			$ret = @mysql_db_query($this->db, $qry, $this->dbh);
@@ -379,7 +384,7 @@ class phpMyEdit
 		}
 		if (! $ret) {
 			echo '<h4>MySQL error ',mysql_errno($this->dbh),'</h4>';
-			echo htmlspecialchars(mysql_error($this->dbh)),'<hr size="1" />',"\n";
+			echo fhtmlspecialchars(mysql_error($this->dbh)),'<hr size="1" />',"\n";
 		}
 		return $ret;
 	} /* }}} */
@@ -411,7 +416,7 @@ class phpMyEdit
 				'Search' => 'v',
 				'Hide'   => '^',
 				'Clear'  => 'X',
-				'Query'  => htmlspecialchars('>'));
+				'Query'  => fhtmlspecialchars('>'));
 		if ((!$this->nav_text_links() && !$this->nav_graphic_links())
 				|| !isset($ret['Search']) || !isset($ret['Query'])
 				|| !isset($ret['Hide'])   || !isset($ret['Clear'])) {
@@ -435,12 +440,12 @@ class phpMyEdit
 	{
 		$db    = &$this->fdd[$field_num]['values']['db'];
 		$table = $this->sd.$this->fdd[$field_num]['values']['table'].$this->ed;
-		$key   = &$this->fdd[$field_num]['values']['column'];
+		$column   = &$this->fdd[$field_num]['values']['column'];
 		$desc  = &$this->fdd[$field_num]['values']['description'];
 		$dbp   = isset($db) ? $this->sd.$db.$this->ed.'.' : $this->dbp;
 		$qparts['type'] = 'select';
 		if ($table != $this->sd.$this->ed) {
-			$qparts['select'] = 'DISTINCT '.$table.'.'.$this->sd.$key.$this->ed;
+			$qparts['select'] = 'DISTINCT '.$table.'.'.$this->sd.$column.$this->ed;
 			if ($desc && is_array($desc) && is_array($desc['columns'])) {
 				$qparts['select'] .= ',CONCAT('; // )
 				$num_cols = sizeof($desc['columns']);
@@ -464,8 +469,8 @@ class phpMyEdit
 			} else if ($desc) {
 				$qparts['select'] .= ','.$table.'.'.$this->sd.$desc.$this->ed;
 				$qparts['orderby'] = $this->sd.$desc.$this->ed;
-			} else if ($key) {
-				$qparts['orderby'] = $this->sd.$key.$this->ed;
+			} else if ($column) {
+				$qparts['orderby'] = $this->sd.$column.$this->ed;
 			}
 			$qparts['from'] = $dbp.$table;
 			$ar = array(
@@ -790,7 +795,7 @@ class phpMyEdit
 
 	function form_begin() /* {{{ */
 	{
-		$page_name = htmlspecialchars($this->page_name);
+		$page_name = fhtmlspecialchars($this->page_name);
 		if ($this->add_operation() || $this->change_operation() || $this->copy_operation()
 				|| $this->view_operation() || $this->delete_operation()) {
 			$field_to_tab = array();
@@ -824,8 +829,8 @@ class phpMyEdit
 				echo '</style>',"\n";
 				// TAB javascripts
 				echo '<script type="text/javascript"><!--',"\n\n";
-				$css_class_name1 = $this->getCSSclass('tab', $position);
-				$css_class_name2 = $this->getCSSclass('tab-selected', $position);
+				$css_class_name1 = $this->getCSSclass('tab');
+				$css_class_name2 = $this->getCSSclass('tab-selected');
 				echo 'var '.$this->js['prefix'].'cur_tab  = "'.$this->dhtml['prefix'].'tab',$this->cur_tab,'";
 
 function '.$this->js['prefix'].'show_tab(tab_name)
@@ -922,7 +927,7 @@ function '.$this->js['prefix'].'form_control(theForm)
 					echo '
 		alert("';
 					if (isset($this->fdd[$k]['js']['hint'])) {
-						echo htmlspecialchars($this->fdd[$k]['js']['hint']);
+						echo fhtmlspecialchars($this->fdd[$k]['js']['hint']);
 					} else {
 						echo $this->labels['Please enter'],' ',$this->fdd[$k]['name'],'.';
 					}
@@ -1058,7 +1063,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 					echo ' wrap="virtual"';
 				}
 				echo '>';
-				if($escape) echo htmlspecialchars($this->fdd[$k]['default']);
+				if($escape) echo fhtmlspecialchars($this->fdd[$k]['default']);
 				else echo $this->fdd[$k]['default'];
 				echo '</textarea>',"\n";
 			} elseif ($this->col_has_php($k)) {
@@ -1079,7 +1084,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 				echo ($this->readonly($k) ? ' disabled' : '');
 				echo ' name="',$this->cgi['prefix']['data'].$this->fds[$k],'"';
 				echo $len_props,' value="';
-				if($escape) echo htmlspecialchars($this->fdd[$k]['default']);
+				if($escape) echo fhtmlspecialchars($this->fdd[$k]['default']);
 			    else echo $this->fdd[$k]['default'];
 				echo '" />';
 			}
@@ -1206,7 +1211,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 				echo ' wrap="virtual"';
 			}
 			echo '>';
-			if($escape) echo htmlspecialchars($row["qf$k"]);
+			if($escape) echo fhtmlspecialchars($row["qf$k"]);
 			else echo $row["qf$k"];
 			echo '</textarea>',"\n";
 		} elseif ($this->col_has_php($k)) {
@@ -1224,7 +1229,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			echo '<input class="',$css_class_name,'" type="text"';
 			echo ($this->readonly($k) ? ' disabled' : '');
 			echo ' name="',$this->cgi['prefix']['data'].$this->fds[$k],'" value="';
-			if($escape) echo htmlspecialchars($row["qf$k"]);
+			if($escape) echo fhtmlspecialchars($row["qf$k"]);
 			else echo $row["qf$k"];
 			echo '"',$len_props,' />',"\n";
 		}
@@ -1248,7 +1253,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		echo '<input class="',$this->getCSSclass('value', null, true, $css_postfix),'" type="password"';
 		echo ($this->readonly($k) ? ' disabled' : '');
 		echo ' name="',$this->cgi['prefix']['data'].$this->fds[$k],'" value="';
-		echo htmlspecialchars($row["qf$k"]),'"',$len_props,' />',"\n";
+		echo fhtmlspecialchars($row["qf$k"]),'"',$len_props,' />',"\n";
 		echo '</td>',"\n";
 	} /* }}} */
 
@@ -1353,7 +1358,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			?  $this->substituteVars($this->fdd[$k]['URLdisp'], $ar)
 			: $disp_val;
 		$target = isset($this->fdd[$k]['URLtarget'])
-			? 'target="'.htmlspecialchars($this->fdd[$k]['URLtarget']).'" '
+			? 'target="'.fhtmlspecialchars($this->fdd[$k]['URLtarget']).'" '
 			: '';
 		$prefix_found  = false;
 		$postfix_found = false;
@@ -1379,9 +1384,9 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			$ret = '&nbsp;';
 		} else {
 			if ($escape) {
-				$urldisp = htmlspecialchars($urldisp);
+				$urldisp = fhtmlspecialchars($urldisp);
 			}
-			$urllink = htmlspecialchars($urllink);
+			$urllink = fhtmlspecialchars($urllink);
 			$ret = '<a '.$target.'class="'.$css.'" href="'.$urllink.'">'.$urldisp.'</a>';
 		}
 		return $ret;
@@ -1453,7 +1458,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			return '&nbsp;';
 		}
 		if ($escape) {
-			$value = htmlspecialchars($value);
+			$value = fhtmlspecialchars($value);
 		}
 		return nl2br($value);
 	} /* }}} */
@@ -1504,8 +1509,8 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 
 	function htmlHidden($name, $value) /* {{{ */
 	{
-		return '<input type="hidden" name="'.htmlspecialchars($name)
-			.'" value="'.htmlspecialchars($value).'" />'."\n";
+		return '<input type="hidden" name="'.fhtmlspecialchars($name)
+			.'" value="'.fhtmlspecialchars($value).'" />'."\n";
 	} /* }}} */
 
 	/**
@@ -1525,7 +1530,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 	function htmlSelect($name, $css, $kv_array, $selected = null, /* ...) {{{ */
 			/* booleans: */ $multiple = false, $readonly = false, $strip_tags = false, $escape = true, $js = NULL)
 	{
-		$ret = '<select class="'.htmlspecialchars($css).'" name="'.htmlspecialchars($name);
+		$ret = '<select class="'.fhtmlspecialchars($css).'" name="'.fhtmlspecialchars($name);
 		if ($multiple) {
 			$ret  .= '[]" multiple size="'.$this->multiple;
 			if (! is_array($selected) && $selected !== null) {
@@ -1536,19 +1541,19 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		if (! is_array($selected)) {
 			$selected = $selected === null ? array() : array((string)$selected);
 		} else {
-			foreach($selected as $val) $selecte2[]=(string)$val;
+			foreach($selected as $val) $selected2[]=(string)$val;
 			$selected = $selected2;
 		}
 		$found = false;
 		foreach ($kv_array as $key => $value) {
-			$ret .= '<option value="'.htmlspecialchars($key).'"';
+			$ret .= '<option value="'.fhtmlspecialchars($key).'"';
 			if ((! $found || $multiple) && in_array((string)$key, $selected, 1)
 					|| (count($selected) == 0 && ! $found && ! $multiple)) {
 				$ret  .= ' selected="selected"';
 				$found = true;
 			}
 			$strip_tags && $value = strip_tags($value);
-			$escape     && $value = htmlspecialchars($value);
+			$escape     && $value = fhtmlspecialchars($value);
 			$ret .= '>'.$value.'</option>'."\n";
 		}
 		$ret .= '</select>';
@@ -1584,7 +1589,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		$found = false;
 		foreach ($kv_array as $key => $value) {
 			$ret .= '<input type="'.($multiple ? 'checkbox' : 'radio').'" name="';
-			$ret .= htmlspecialchars($name).'[]" value="'.htmlspecialchars($key).'"';
+			$ret .= fhtmlspecialchars($name).'[]" value="'.fhtmlspecialchars($key).'"';
 			if ((! $found || $multiple) && in_array((string) $key, $selected, 1)
 					|| (count($selected) == 0 && ! $found && ! $multiple)) {
 				$ret  .= ' checked';
@@ -1594,7 +1599,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 				$ret .= ' disabled';
 			}
 			$strip_tags && $value = strip_tags($value);
-			$escape     && $value = htmlspecialchars($value);
+			$escape     && $value = fhtmlspecialchars($value);
 			$ret .= '>'.$value.'<br>'."\n";
 		}
 		return $ret;
@@ -1645,9 +1650,9 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
                         continue;
                     }
                     $ret == '' || $ret .= '&amp;';
-                    $ret .= htmlspecialchars(rawurlencode($key));
+                    $ret .= fhtmlspecialchars(rawurlencode($key));
                     $ret .= '=';
-                    $ret .= htmlspecialchars(rawurlencode($val));
+                    $ret .= fhtmlspecialchars(rawurlencode($val));
                 }
             }
             if ($method[strlen($method) - 1] == '+') {
@@ -1827,7 +1832,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		echo 'fdd=',$this->fdd,'   ';
 		echo 'fl=',$this->fl,'   ';
 		echo 'fm=',$this->fm,'   ';
-		echo 'sfn=',htmlspecialchars($this->get_sfn_cgi_vars()),'   ';
+		echo 'sfn=',fhtmlspecialchars($this->get_sfn_cgi_vars()),'   ';
 		echo 'qfn=',$this->qfn,'   ';
 		echo 'sw=',$this->sw,'   ';
 		echo 'rec=',$this->rec,'   ';
@@ -1987,7 +1992,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		}
 		if ($name == 'goto_combo') {
 			$disabledgoto = !($listall || ($disablednext && $disabledprev)) ? '' : ' disabled';
-			if ($disablegoto != '' && $disabled < 0) return;
+			if ($disabledgoto != '' && $disabled < 0) return;
 			$kv_array = array();
 			for ($i = 0; $i < $total_pages; $i++) {
 				$kv_array[$this->inc * $i] = $i + 1;
@@ -2057,8 +2062,8 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		$this->qfn != $this->prev_qfn && $this->fm = 0;
 		if (0) { // DEBUG
 			echo 'qfn vs. prev_qfn comparsion ';
-			echo '[<b>',htmlspecialchars($this->qfn),'</b>]';
-			echo '[<b>',htmlspecialchars($this->prev_qfn),'</b>]<br />';
+			echo '[<b>',fhtmlspecialchars($this->qfn),'</b>]';
+			echo '[<b>',fhtmlspecialchars($this->prev_qfn),'</b>]<br />';
 			echo 'comparsion <u>',($this->qfn == $this->prev_qfn ? 'proved' : 'failed'),'</u>';
 			echo '<hr size="1" />';
 		}
@@ -2131,7 +2136,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 				array_unshift($new_sfn, in_array("$k", $new_sfn, 1) ? "-$k" : $k);
 				echo '<th class="',$css_class_name,'">';
 				echo '<a class="',$css_class_name,'" href="';
-				echo htmlspecialchars($this->page_name.'?'.$this->cgi['prefix']['sys'].'fm'.'=0'
+				echo fhtmlspecialchars($this->page_name.'?'.$this->cgi['prefix']['sys'].'fm'.'=0'
 						.'&'.$this->cgi['prefix']['sys'].'fl'.'='.$this->fl
 						.'&'.$this->cgi['prefix']['sys'].'qfn'.'='.rawurlencode($this->qfn).$this->qfn
 						.'&'.$this->get_sfn_cgi_vars($new_sfn).$this->cgi['persist']);
@@ -2280,7 +2285,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 							echo $this->htmlSelect($this->cgi['prefix']['sys'].$l.'_comp',
 									$css_class_name, $this->comp_ops, $mc);
 						}
-						echo '<input class="',$css_class_name,'" value="',htmlspecialchars(@$m);
+						echo '<input class="',$css_class_name,'" value="',fhtmlspecialchars(@$m);
 						echo '" type="text" name="'.$this->cgi['prefix']['sys'].'qf'.$k.'"',$len_props;
 						echo ' onkeypress="return '.$this->js['prefix'].'filter_handler(this.form, event);" />';
 					} else {
@@ -2300,7 +2305,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			echo '<tr class="',$css_class_name,'">',"\n";
 			echo '<td class="',$css_class_name,'" colspan="',$sys_cols,'">';
 			echo '<a class="',$css_class_name,'" href="';
-			echo htmlspecialchars($this->page_name
+			echo fhtmlspecialchars($this->page_name
 					.'?'.$this->cgi['prefix']['sys'].'fl'.'='.$this->fl
 					.'&'.$this->cgi['prefix']['sys'].'fm'.'='.$this->fm
 					.'&'.$this->cgi['prefix']['sys'].'qfn'.'='.rawurlencode($this->qfn)
@@ -2319,14 +2324,14 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			echo '<tr class="',$css_class_name,'">',"\n";
 			echo '<td class="',$css_class_name,'" colspan="',$sys_cols,'">';
 			echo '<a class="',$css_class_name,'" href="';
-			echo htmlspecialchars($this->get_server_var('PHP_SELF')
+			echo fhtmlspecialchars($this->get_server_var('PHP_SELF')
 					.'?'.$this->cgi['prefix']['sys'].'fl'.'='.$this->fl
 					.'&'.$this->cgi['prefix']['sys'].'fm'.'='.$this->fm
 					.'&'.$this->cgi['prefix']['sys'].'qfn'.'='.rawurlencode($this->qfn)
 					.'&'.$this->get_sfn_cgi_vars().$this->cgi['persist']);
 			echo '">',$this->labels['Clear'],'</a></td>',"\n";
 			echo '<td class="',$css_class_name,'" colspan="',$this->num_fields_displayed,'">';
-			echo $this->labels['Current Query'],': ',htmlspecialchars($text_query),'</td></tr>',"\n";
+			echo $this->labels['Current Query'],': ',fhtmlspecialchars($text_query),'</td></tr>',"\n";
 		}
 
 		if ($this->nav_text_links() || $this->nav_graphic_links()) {
@@ -2344,10 +2349,10 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			$qpcopy[]    = $qp_prefix.'Copy';
 			$qpchange[]  = $qp_prefix.'Change';
 			$qpdelete[]  = $qp_prefix.'Delete';
-			$qpviewStr   = htmlspecialchars($this->page_name.'?'.join('&',$qpview).$this->qfn);
-			$qpcopyStr   = htmlspecialchars($this->page_name.'?'.join('&',$qpcopy).$this->qfn);
-			$qpchangeStr = htmlspecialchars($this->page_name.'?'.join('&',$qpchange).$this->qfn);
-			$qpdeleteStr = htmlspecialchars($this->page_name.'?'.join('&',$qpdelete).$this->qfn);
+			$qpviewStr   = fhtmlspecialchars($this->page_name.'?'.join('&',$qpview).$this->qfn);
+			$qpcopyStr   = fhtmlspecialchars($this->page_name.'?'.join('&',$qpcopy).$this->qfn);
+			$qpchangeStr = fhtmlspecialchars($this->page_name.'?'.join('&',$qpchange).$this->qfn);
+			$qpdeleteStr = fhtmlspecialchars($this->page_name.'?'.join('&',$qpdelete).$this->qfn);
 		}
 
 		$fetched  = true;
@@ -2359,15 +2364,15 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			echo '<tr class="',$this->getCSSclass('row', null, 'next'),'">',"\n";
 			if ($sys_cols) { /* {{{ */
 				$key_rec     = $row['qf'.$this->key_num];
-				$queryAppend = htmlspecialchars('&'.$this->cgi['prefix']['sys'].'rec'.'='.$key_rec);
+				$queryAppend = fhtmlspecialchars('&'.$this->cgi['prefix']['sys'].'rec'.'='.$key_rec);
 				$viewQuery   = $qpviewStr   . $queryAppend;
 				$copyQuery   = $qpcopyStr   . $queryAppend;
 				$changeQuery = $qpchangeStr . $queryAppend;
 				$deleteQuery = $qpdeleteStr . $queryAppend;
-				$viewTitle   = htmlspecialchars($this->labels['View']);
-				$changeTitle = htmlspecialchars($this->labels['Change']);
-				$copyTitle   = htmlspecialchars($this->labels['Copy']);
-				$deleteTitle = htmlspecialchars($this->labels['Delete']);
+				$viewTitle   = fhtmlspecialchars($this->labels['View']);
+				$changeTitle = fhtmlspecialchars($this->labels['Change']);
+				$copyTitle   = fhtmlspecialchars($this->labels['Copy']);
+				$deleteTitle = fhtmlspecialchars($this->labels['Delete']);
 				$css_class_name = $this->getCSSclass('navigation', null, true);
 				if ($select_recs) {
 					if (! $this->nav_buttons() || $sys_cols > 1) {
@@ -2438,7 +2443,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 					if ($this->nav_buttons()) {
 						echo '<td class="',$css_class_name,'"><input class="',$css_class_name;
 						echo '" type="radio" name="'.$this->cgi['prefix']['sys'].'rec';
-						echo '" value="',htmlspecialchars($key_rec),'"';
+						echo '" value="',fhtmlspecialchars($key_rec),'"';
 						if (($this->rec == '' && $first) || ($this->rec == $key_rec)) {
 							echo ' checked';
 							$first = false;
@@ -2467,49 +2472,6 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			echo '</tr>',"\n";
 		}
 
-		/*
-		 * Display and accumulate column aggregation info, do totalling query
-		 * XXX this feature does not work yet!!!
-		 */
-		// aggregates listing (if any)
-		if ($$var_to_total) {
-			// do the aggregate query if necessary
-			//if ($vars_to_total) {
-				$qp = array();
-				$qp['type'] = 'select';
-				$qp['select'] = $aggr_from_clause;
-				$qp['from']   = $this->get_SQL_join_clause();
-				$qp['where']  = $this->get_SQL_where_from_query_opts();
-				$tot_query    = $this->get_SQL_query($qp);
-				$totals_result = $this->myquery($tot_query,__LINE__);
-				$tot_row       = $this->sql_fetch($totals_result);
-			//}
-			$qp_aggr = $qp;
-			echo "\n",'<tr class="TODO-class">',"\n",'<td class="TODO-class">&nbsp;</td>',"\n";
-			/*
-			echo '<td>';
-			echo printarray($qp_aggr);
-			echo printarray($vars_to_total);
-			echo '</td>';
-			echo '<td colspan="'.($this->num_fds-1).'">'.$var_to_total.' '.$$var_to_total.'</td>';
-			*/
-			// display the results
-			for ($k=0;$k<$this->num_fds;$k++) {
-				$fd = $this->fds[$k];
-				if (stristr($this->fdd[$fd]['options'],'L') or !isset($this->fdd[$fd]['options'])) {
-					echo '<td>';
-					$aggr_var  = 'qf'.$k.'_aggr';
-					$$aggr_var = $this->get_sys_cgi_var($aggr_var);
-					if ($$aggr_var) {
-						echo $this->sql_aggrs[$$aggr_var],': ',$tot_row[$aggr_var];
-					} else {
-						echo '&nbsp;';
-					}
-					echo '</td>',"\n";
-				}
-			}
-			echo '</tr>',"\n";
-		}
 		echo '</table>',"\n"; // end of table rows listing
 		$this->display_list_table_buttons('down', $listall);
 		$this->form_end();
@@ -2599,7 +2561,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		// Creating array of changed keys ($changed)
 		$changed = array_keys($newvals);
 		// Before trigger, newvals can be efectively changed
-		if ($this->exec_triggers('insert', 'before', $oldvals, $changed, $newvals) == false) {
+		if ($this->exec_triggers('insert', 'before', null, $changed, $newvals) == false) {
 			return false;
 		}
 		// Real query (no additional query in this method)
@@ -2647,7 +2609,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			$this->myquery($query, __LINE__);
 		}
 		// After trigger
-		if ($this->exec_triggers('insert', 'after', $oldvals, $changed, $newvals) == false) {
+		if ($this->exec_triggers('insert', 'after', null, $changed, $newvals) == false) {
 			return false;
 		}
 		return true;
@@ -2792,7 +2754,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 					.' VALUES (NOW(), "%s", "%s", "delete", "%s", "%s", "%s", "%s", "")',
 					$this->logtable, addslashes($this->get_server_var('REMOTE_USER')),
 					addslashes($this->get_server_var('REMOTE_ADDR')), addslashes($this->tb),
-					addslashes($this->rec), addslashes($key), addslashes(serialize($oldvals)));
+					addslashes($this->rec), addslashes($this->key), addslashes(serialize($oldvals)));
 			$this->myquery($query, __LINE__);
 		}
 		// After trigger
@@ -3046,9 +3008,9 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 	 */
 	function error($message, $additional_info = '') /* {{{ */
 	{
-		echo '<h1>phpMyEdit error: ',htmlspecialchars($message),'</h1>',"\n";
+		echo '<h1>phpMyEdit error: ',fhtmlspecialchars($message),'</h1>',"\n";
 		if ($additional_info != '') {
-			echo '<hr size="1" />',htmlspecialchars($additional_info);
+			echo '<hr size="1" />',fhtmlspecialchars($additional_info);
 		}
 		return false;
 	} /* }}} */
@@ -3097,7 +3059,6 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 		 */
 
 		// Let's do explicit quoting - it's safer
-		set_magic_quotes_runtime(0);
 		// Checking if language file inclusion was successful
 		if (! is_array($this->labels)) {
 			$this->error('could not locate language files', 'searched path: '.$this->dir['lang']);
