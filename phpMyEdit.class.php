@@ -51,7 +51,7 @@ class phpMyEdit_timer /* {{{ */
 	var $startTime;
 	var $started;
 
-	function phpMyEdit_timer($start = true)
+	function __construct($start = true)
 	{
 		$this->started = false;
 		if ($start) {
@@ -100,7 +100,7 @@ if (! function_exists('realpath')) { /* {{{ */
 	}
 } /* }}} */
 
-class phpMyEdit
+#[AllowDynamicProperties] class phpMyEdit
 {
 	// Class variables {{{
 
