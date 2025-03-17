@@ -1,0 +1,20 @@
+{
+    "name": "dukei/phpmyedit",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Dmitry Kochin",
+            "email": "dco@mail.ru"
+        }
+    ],
+    "require-dev": {
+        "rector/rector": "^2.0"
+    },
+    "autoload": {
+        "classmap": [
+	     "phpMyEdit.class.php",
+             "extensions/"
+        ]
+    }
+}
