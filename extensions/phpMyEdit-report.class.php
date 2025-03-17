@@ -32,13 +32,13 @@ require_once dirname(__FILE__).'/../phpMyEdit.class.php';
 class phpMyEdit_report extends phpMyEdit
 {
 
-	function phpMyEdit_report($opts) /* {{{ */
+	function __construct($opts) /* {{{ */
 	{
 		$opts['options'] = 'L';
 		$execute = 1;
 		isset($opts['execute']) && $execute = $opts['execute'];
 		$opts['execute'] = 0;
-		parent::phpMyEdit($opts);
+		parent::__construct($opts);
 		$execute && $this->execute();
 	} /* }}} */
 

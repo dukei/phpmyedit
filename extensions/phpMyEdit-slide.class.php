@@ -33,19 +33,19 @@ class phpMyEdit_slide extends phpMyEdit
 	// Extension options array
 	var $ext;
 
-	function phpMyEdit_slide($opts) /* {{{ */
+	function __construct($opts) /* {{{ */
 	{
 		$execute = 1;
 		isset($opts['execute']) && $execute = $opts['execute'];
 		$opts['execute'] = 0;
-		parent::phpMyEdit($opts);
+		parent::__construct($opts);
 
 		$this->ext = $opts['ext'];
 
-		$execute && $this->execute($opts);
+		$execute && $this->execute();
 	} /* }}} */
 
-	function execute($opts) /* {{{ */
+	function execute() /* {{{ */
 	{
 		if ($this->get_sys_cgi_var('rec_change')
 				&& ($this->next_operation() || $this->prev_operation())) {
@@ -81,10 +81,10 @@ class phpMyEdit_slide extends phpMyEdit
 			// TODO: order by clausule according to default sort order options
 			$res = $this->myquery($this->get_SQL_query($query_parts), __LINE__);
 			$ids = array();
-			while (($row = @mysql_fetch_array($res, MYSQL_NUM)) !== false) {
+			while (($row = mysqli_fetch_array($res, MYSQLI_NUM)) !== false) {
 				$ids[] = $row[0];
 			}
-			@mysql_free_result($res);
+			mysqli_free_result($res);
 			if ($this->rec) {
 				$idx = array_search($this->rec, $ids);
 				$idx === false && $idx = 0;

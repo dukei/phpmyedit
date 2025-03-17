@@ -3142,7 +3142,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 	/*
 	 * Class constructor
 	 */
-	function phpMyEdit($opts) /* {{{ */
+	function __construct($opts) /* {{{ */
 	{
 		// Set desirable error reporting level
 		$error_reporting = error_reporting(E_ALL & ~E_NOTICE);
