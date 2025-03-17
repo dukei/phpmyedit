@@ -40,6 +40,12 @@ function fhtmlspecialchars($myString) {
 	return htmlspecialchars($myString, ENT_COMPAT, 'ISO-8859-1', true);
 }
 
+// Mysqli polifill
+function mysqli_field_len($result, $field_offset) {
+	$properties = mysqli_fetch_field_direct($result, $field_offset);
+	return is_object($properties) ? $properties->length : null;
+}
+
 class phpMyEdit_timer /* {{{ */
 {
 	var $startTime;
@@ -187,8 +193,9 @@ class phpMyEdit
 	/*
 	 * column specific functions
 	 */
+    protected int $total_recs;
 
-	function col_has_sql($k)    { return isset($this->fdd[$k]['sql']); }
+    function col_has_sql($k)    { return isset($this->fdd[$k]['sql']); }
 	function col_has_sqlw($k)   { return isset($this->fdd[$k]['sqlw']) && !$this->virtual($k); }
 	function col_has_values($k) { return isset($this->fdd[$k]['values']) || isset($this->fdd[$k]['values2']); }
 	function col_has_php($k)    { return isset($this->fdd[$k]['php']); }
@@ -317,45 +324,43 @@ class phpMyEdit
      */
 	function sql_connect() /* {{{ */
 	{
-		$this->dbh = @ini_get('allow_persistent')
-			? @mysql_pconnect($this->hn, $this->un, $this->pw)
-			: @mysql_connect($this->hn, $this->un, $this->pw);
+		$this->dbh = mysqli_connect($this->hn, $this->un, $this->pw);
 	} /* }}} */
 		
 
 	function sql_disconnect() /* {{{ */
 	{
 		if ($this->close_dbh) {
-			@mysql_close($this->dbh);
+			mysqli_close($this->dbh);
 			$this->dbh = null;
 		}
 	} /* }}} */
 
 	function sql_fetch(&$res, $type = 'a') /* {{{ */
 	{
-		if($type == 'n') $type = MYSQL_NUM;
-		else $type = MYSQL_ASSOC;
-		return @mysql_fetch_array($res, $type);
+		if($type == 'n') $type = MYSQLI_NUM;
+		else $type = MYSQLI_ASSOC;
+		return @mysqli_fetch_array($res, $type);
 	} /* }}} */
 
 	function sql_free_result(&$res) /* {{{ */
 	{
-		return @mysql_free_result($res);
+		mysqli_free_result($res);
 	} /* }}} */
 
 	function sql_affected_rows(&$dbh) /* {{{ */
 	{
-		return @mysql_affected_rows($dbh);
+		return mysqli_affected_rows($dbh);
 	} /* }}} */
 
 	function sql_field_len(&$res,$field) /* {{{ */
 	{
-		return @mysql_field_len($res, $field);
+		return @mysqli_field_len($res, $field);
 	} /* }}} */
 
 	function sql_insert_id() /* {{{ */
 	{
-		return mysql_insert_id($this->dbh);
+		return mysqli_insert_id($this->dbh);
 	} /* }}} */
 
 	function sql_limit($start, $more) /* {{{ */
@@ -377,14 +382,14 @@ class phpMyEdit
 			$line = intval($line);
 			echo '<h4>MySQL query at line ',$line,'</h4>',fhtmlspecialchars($qry),'<hr size="1" />',"\n";
 		}
-		if (isset($this->db)) {
-			$ret = @mysql_db_query($this->db, $qry, $this->dbh);
-		} else {
-			$ret = @mysql_query($qry, $this->dbh);
-		}
+		if (isset($this->db))
+			mysqli_select_db($this->dbh, $this->db);
+
+		$ret = @mysqli_query($qry, $this->dbh);
+
 		if (! $ret) {
-			echo '<h4>MySQL error ',mysql_errno($this->dbh),'</h4>';
-			echo fhtmlspecialchars(mysql_error($this->dbh)),'<hr size="1" />',"\n";
+			echo '<h4>MySQL error ',mysqli_errno($this->dbh),'</h4>';
+			echo fhtmlspecialchars(mysqli_error($this->dbh)),'<hr size="1" />',"\n";
 		}
 		return $ret;
 	} /* }}} */
@@ -461,7 +466,7 @@ class phpMyEdit
 						$qparts['select'] .= ',';
 					}
 				}
-				$qparts['select']{strlen($qparts['select']) - 1} = ')';
+				$qparts['select'][strlen($qparts['select']) - 1] = ')';
 				$qparts['select'] .= ' AS '.$this->sd.'PMEalias'.$field_num.$this->ed;
 				$qparts['orderby'] = $this->sd.'PMEalias'.$field_num.$this->ed;
 			} else if ($desc && is_array($desc)) {
@@ -525,7 +530,7 @@ class phpMyEdit
 							$ret .= ',';
 						}
 					}
-					$ret{strlen($ret) - 1} = ')';
+					$ret[strlen($ret) - 1] = ')';
 				} else if (is_array($desc)) {
 					// TODO
 				} else {
@@ -1442,7 +1447,7 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			}
 		}
 		if (intval($this->fdd[$k]['trimlen']) > 0 && strlen($value) > $this->fdd[$k]['trimlen']) {
-			$value = ereg_replace("[\r\n\t ]+",' ',$value);
+			$value = preg_replace('[\r\n\t ]+',' ',$value);
 			$value = substr($value, 0, $this->fdd[$k]['trimlen'] - 3).'...';
 		}
 		if (@$this->fdd[$k]['mask']) {
@@ -1714,25 +1719,11 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 			return $this->cgi['overwrite'][$name];
 		}
 
-        static $magic_quotes_gpc = null;
-        if ($magic_quotes_gpc === null) {
-            $magic_quotes_gpc = get_magic_quotes_gpc();
-        }
         $var = @$_GET[$name];
         if (! isset($var)) {
             $var = @$_POST[$name];
         }
-        if (isset($var)) {
-            if ($magic_quotes_gpc) {
-                if (is_array($var)) {
-                    foreach (array_keys($var) as $key) {
-                        $var[$key] = stripslashes($var[$key]);
-                    }
-                } else {
-                    $var = stripslashes($var);
-                }
-            }
-        } else {
+        if (!isset($var)) {
             $var = @$default_value;
         }
 		if (isset($this) && $var === null && isset($this->cgi['append'][$name])) {
@@ -3332,10 +3323,3 @@ function '.$this->js['prefix'].'filter_handler(theForm, theEvent)
 	} /* }}} */
 
 }
-
-/* Modeline for ViM {{{
- * vim:set ts=4:
- * vim600:fdm=marker fdl=0 fdc=0:
- * }}} */
-
-?>

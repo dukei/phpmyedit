@@ -64,7 +64,7 @@ class phpMyEdit_report extends phpMyEdit
 		return $ret;
 	} /* }}} */
 
-	function display_list_table_buttons($total_recs, $position) /* {{{ */
+	function display_list_table_buttons($position, $listall = false) /* {{{ */
 	{	/* This is mostly copy/paste from core class. */
 		$listall = $this->inc <= 0; // Are we doing a listall?
 		echo '<table class="',$this->getCSSclass('navigation', $position),'">',"\n";
@@ -76,7 +76,7 @@ class phpMyEdit_report extends phpMyEdit
 		$disabled = ($this->fm > 0 && ! $listall) ? '' : ' disabled';
 		echo '<input',$disabled,' class="',$this->getCSSclass('prev', $position);
 		echo '" type="submit" name="',ltrim($disabled),'prev" value="',$this->labels['Prev'],'">&nbsp;';
-		$disabled = ($this->fm + $this->inc < $total_recs && ! $listall) ? '' : ' disabled';
+		$disabled = ($this->fm + $this->inc < $this->total_recs && ! $listall) ? '' : ' disabled';
 		echo '<input',$disabled,' class="',$this->getCSSclass('next', $position);
 		echo '" type="submit" name="',ltrim($disabled),'next" value="',$this->labels['Next'],'">';
 		// Message is now written here
@@ -90,9 +90,9 @@ class phpMyEdit_report extends phpMyEdit
 			echo $this->labels['Page'],':&nbsp;1&nbsp;',$this->labels['of'],'&nbsp;1';
 		} else {
 			echo $this->labels['Page'],':&nbsp;',($this->fm / $this->inc) + 1;
-			echo '&nbsp;',$this->labels['of'],'&nbsp;',max(1, ceil($total_recs / abs($this->inc)));
+			echo '&nbsp;',$this->labels['of'],'&nbsp;',max(1, ceil($this->total_recs / abs($this->inc)));
 		}
-		echo '&nbsp; ',$this->labels['Records'],':&nbsp;',$total_recs;
+		echo '&nbsp; ',$this->labels['Records'],':&nbsp;',$this->total_recs;
 		echo '</td></tr></table>',"\n";
 	} /* }}} */
 
@@ -106,7 +106,7 @@ class phpMyEdit_report extends phpMyEdit
 		echo '</td></tr></table>',"\n";
 	} /* }}} */
 
-	function get_select_fields_link() /* {{{ */
+	function get_select_fields_link($table_cols) /* {{{ */
 	{
 		$link = '<a href="'.htmlspecialchars($this->page_name).'?fields_select=1';
 		for ($i = 0; $i < count($table_cols); $i++) {
@@ -144,7 +144,7 @@ class phpMyEdit_report extends phpMyEdit
 				'from'   => $this->tb,
 				'limit'  => '1');
 		$result = $this->myquery($this->get_SQL_query($query_parts), __LINE__);
-		$all_table_cols = array_keys(@mysql_fetch_array($result, MYSQL_ASSOC));
+		$all_table_cols = array_keys(@mysqli_fetch_array($result, MYSQLI_ASSOC));
 		if (count($all_table_cols) <= 0) {
 			$this->error('database fetch error');
 			return false;
@@ -153,9 +153,9 @@ class phpMyEdit_report extends phpMyEdit
 			if (preg_match('/^\d*$/', $field_name))
 				continue;
 			if (($idx = array_search($field_name, $all_table_cols)) !== false)
-				$table_cols[$field_name] = mysql_field_len($result, $idx);
+				$table_cols[$field_name] = mysqli_field_len($result, $idx);
 		}
-		@mysql_free_result($result);
+		@mysqli_free_result($result);
 		unset($all_table_cols);
 
 		/*
@@ -223,7 +223,7 @@ class phpMyEdit_report extends phpMyEdit
 		}
 
 		if (0) {
-			$this->message .= $this->get_select_fields_link();
+			$this->message .= $this->get_select_fields_link($table_cols);
 		}
 
 		// parent class call
