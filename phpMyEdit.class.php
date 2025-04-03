@@ -193,7 +193,7 @@ if (! function_exists('realpath')) { /* {{{ */
 	/*
 	 * column specific functions
 	 */
-    protected int $total_recs;
+    protected int $total_recs = 0;
 
     function col_has_sql($k)    { return isset($this->fdd[$k]['sql']); }
 	function col_has_sqlw($k)   { return isset($this->fdd[$k]['sqlw']) && !$this->virtual($k); }
